@@ -1,5 +1,7 @@
-export interface Window {
-
+declare global {
+    interface Window {
+        socket: WebSocket | undefined;
+    }
 }
 
 export enum MessageType {
@@ -11,9 +13,21 @@ export enum MessageType {
     IssueCommand = "issuecommand",
     Restart = "restart",
     Restarted = "restarted",
+    ChatReceive = "chatreceive",
+    LoadChat = "loadchat",
+    SendChat = "sendchat",
+    ListFiles = "listfiles",
+    LoadFile = "loadfile",
+    SaveFile = "savefile",
 }
 
 export interface Message {
     type: MessageType,
     data: any
+}
+
+export interface ChatMessage {
+    message: string;
+    support: boolean;
+    timestamp: string;
 }
