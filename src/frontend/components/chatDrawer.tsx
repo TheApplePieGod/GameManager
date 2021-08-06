@@ -134,9 +134,6 @@ export const ChatDrawer = (props: Props) => {
             <Tooltip arrow title="Live support">
                 <Fab color="primary" onClick={openDrawer} style={{ position: "fixed", left: 0, bottom: 0, margin: "1rem" }}><ChatIcon /></Fab>
             </Tooltip>
-            {/* <Tooltip arrow title="Server settings">
-                <Fab onClick={openDrawer} style={{ position: "fixed", left: "8rem", bottom: 0, margin: "1rem" }}><SettingsIcon /></Fab>
-            </Tooltip> */}
         </React.Fragment>
     );
 }

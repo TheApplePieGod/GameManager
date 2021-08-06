@@ -23,6 +23,8 @@ export enum MessageType {
     StartUploadFile = "startuploadfile",
     StopUploadFile = "stopuploadfile",
     FileDataReceive = "filedatareceive",
+    LoadSettings = "loadsettings",
+    SaveSettings = "savesettings",
 }
 
 export interface Message {
@@ -39,4 +41,21 @@ export interface ChatMessage {
 export interface PrepareUploadResult {
     success: boolean;
     size: number;
+}
+
+export interface ServerSettings {
+    worldName: string;
+    maxBackups: number;
+    backupTimeMin: number;
+    backupLogging: boolean;
+    minecraftVersion: string;
+    paperBuild: string;
+}
+export const ServerSettingsDefault: ServerSettings = {
+    worldName: "world",
+    maxBackups: 5,
+    backupTimeMin: 30,
+    backupLogging: true,
+    minecraftVersion: "latest",
+    paperBuild: "latest"
 }

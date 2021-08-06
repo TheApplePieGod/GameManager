@@ -5,6 +5,7 @@ import { Message, MessageType } from '../definitions/types';
 import * as theme from '../theme';
 import { ChatDrawer } from './chatDrawer';
 import { FilesDialog } from './filesDialog';
+import { SettingsDialog } from './settingsDialog';
 import { SnackbarStatus } from './snackbar';
 
 interface Props {
@@ -264,6 +265,7 @@ export const MinecraftDashboard = (props: Props) => {
                     }
                     <ChatDrawer openSnackbar={props.openSnackbar} support={support} />
                     <FilesDialog openSnackbar={props.openSnackbar} />
+                    <SettingsDialog openSnackbar={props.openSnackbar} />
                     <div
                         id="console"
                         onScroll={consoleScroll}
