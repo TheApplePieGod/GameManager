@@ -5,7 +5,7 @@ export const uploadFile = async () => {
     ipcRenderer.invoke('uploadFile');
 }
 
-export const prepareUploadFile = async () => {
-    const result: types.PrepareUploadResult = await ipcRenderer.invoke('prepareUploadFile');
+export const prepareUploadFile = async (isFolder: boolean) => {
+    const result: types.PrepareUploadResult = await ipcRenderer.invoke('prepareUploadFile', isFolder);
     return result;
 }

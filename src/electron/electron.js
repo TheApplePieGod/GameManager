@@ -96,9 +96,9 @@ app.on('activate', function () {
 // -----------------------------------------------------
 
 let tempZippedFile = undefined;
-ipcMain.handle('prepareUploadFile', async (event) => {
+ipcMain.handle('prepareUploadFile', async (event, isFolder) => {
 	const files = await dialog.showOpenDialog(mainWindow, {
-		properties: ["openDirectory"],
+		properties: [isFolder ? "openDirectory" : "openFile"],
 		defaultPath: ""
 	});
 	if (files.filePaths.length > 0) {

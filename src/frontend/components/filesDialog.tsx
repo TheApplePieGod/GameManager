@@ -8,7 +8,8 @@ import EditIcon from '@material-ui/icons/Edit';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { SnackbarStatus } from './snackbar';
 import AceEditor from "react-ace";
-import "ace-builds/src-noconflict/mode-sql";
+import "ace-builds/src-noconflict/mode-yaml";
+import "ace-builds/src-noconflict/mode-json";
 import "ace-builds/src-noconflict/theme-tomorrow_night_bright";
 import { ConfirmDialog } from './confirmDialog';
 const { ipcRenderer } = require("electron");
@@ -53,6 +54,11 @@ export const FilesDialog = (props: Props) => {
     }
 
     const edit = (editPath: string, fileName: string) => {
+        if (fileName == "paper-docker.conf") {
+            props.openSnackbar(SnackbarStatus.Warning, "This file is not editable", 4000);
+            return;
+        }
+
         setLoading(true);
         setEditState({ open: true, fileName: fileName, data: "", path: editPath });
         window.socket?.send(JSON.stringify({ type: MessageType.LoadFile, data: editPath }));
@@ -108,6 +114,7 @@ export const FilesDialog = (props: Props) => {
                     setEditState({ ...editState, data: message.data.data });
                 } else {
                     props.openSnackbar(SnackbarStatus.Error, message.data.message, 4000);
+                    setEditState({ ...editState, open: false, data: "" });
                 }
             } break;
 
@@ -142,7 +149,7 @@ export const FilesDialog = (props: Props) => {
             case MessageType.StopUploadFile: {
                 setUploading("");
                 if (message.data.success) {
-                    props.openSnackbar(SnackbarStatus.Success, "File upload successful! You may have to wait for it to complete unzipping", 6000);
+                    props.openSnackbar(SnackbarStatus.Success, "File upload successful! You may have to wait for it to complete unzipping. An upload will not replace existing files", 8000);
                     if (path == uploading)
                         updatePath(path);
                 } else {
@@ -159,12 +166,17 @@ export const FilesDialog = (props: Props) => {
     }
 
     const deleteFile = (path: string) => {
+        if (path.includes("paper-docker.conf")) {
+            props.openSnackbar(SnackbarStatus.Warning, "This file cannot be deleted", 4000);
+            return;
+        }
+
         setFileToDelete("");
         window.socket?.send(JSON.stringify({ type: MessageType.DeleteFile, data: path }));
     }
 
-    const uploadFile = () => {
-        api.prepareUploadFile().then((result) => {
+    const uploadFile = (isFolder: boolean) => {
+        api.prepareUploadFile(isFolder).then((result) => {
             if (result.success) {
                 window.socket?.send(JSON.stringify({ type: MessageType.StartUploadFile, data: { path: path, size: result.size } }));
             } else {
@@ -237,7 +249,8 @@ export const FilesDialog = (props: Props) => {
                                 <Button variant="outlined" disabled={loading} onClick={refresh}>Refresh</Button>
                                 <Button variant="outlined" disabled={loading || path == "/paper/"} onClick={stepBack}>Step back</Button>
                                 <Button variant="outlined" disabled={loading || path == "/paper/"} onClick={goToRoot}>Go to root</Button>
-                                <Button variant="outlined" disabled={loading || uploading != ""} onClick={uploadFile}>Upload file</Button>
+                                <Button variant="outlined" disabled={loading || uploading != ""} onClick={() => uploadFile(false)}>Upload file</Button>
+                                <Button variant="outlined" disabled={loading || uploading != ""} onClick={() => uploadFile(true)}>Upload folder</Button>
                             </div>
                             <div
                                 id="filelist"
@@ -250,16 +263,18 @@ export const FilesDialog = (props: Props) => {
                                         const split = f.trim().split(' ');
                                         const size = split[0];
                                         const name = split[1];
+                                        if (name == "paper-docker.conf") return undefined;
                                         if (name == "./" || name == "../") return undefined; // navigational folders
                                         const isDirectory = name.slice(-1) == "/"
-                                        const filePath = (isDirectory ? path : path + "/") + name;
+                                        const filePath = path + name;
                                         const canEdit = !isDirectory && !size.includes("G") && (size.includes('M') && parseInt(size.substring(0, size.length - 1))) < 10; // 10 MB max
+                                        const canDelete =  !(path == "/paper/" && name.includes(".jar") && name.includes("paper-")); // dont allow the paper.jar to be deleted 
                                         return ( // we can assume a '.' indicates a file
                                             <div key={i} style={{ display: "flex", alignItems: "center" }}>
                                                 <Typography style={{ color: isDirectory ? "#325bff" : "" }}>{`(${size}) ${name}`}</Typography>
                                                 {isDirectory && <Button disabled={loading} style={{ padding: 0, minWidth: "32px" }} onClick={() => updatePath(filePath)}>+</Button>}
                                                 {canEdit && <Button disabled={loading} style={{ padding: 0, minWidth: "32px" }} onClick={() => edit(filePath, name)}><EditIcon fontSize={"small"} /></Button>} 
-                                                <Button disabled={loading} style={{ padding: 0, minWidth: "32px" }} onClick={() => setFileToDelete(filePath)}><DeleteIcon fontSize={"small"} /></Button>
+                                                {canDelete && <Button disabled={loading} style={{ padding: 0, minWidth: "32px" }} onClick={() => setFileToDelete(filePath)}><DeleteIcon fontSize={"small"} /></Button>}
                                             </div>
                                         )
                                     })
@@ -286,7 +301,7 @@ export const FilesDialog = (props: Props) => {
                             {!loading ?
                                 <AceEditor
                                     placeholder="The file is empty! Add some text here..."
-                                    mode="sql"
+                                    mode={(editState.fileName.endsWith(".yml") || editState.fileName.endsWith(".yaml")) ? "yaml" : "json"}
                                     theme="tomorrow_night_bright"
                                     onChange={(text) => setEditState({ ...editState, data: text })}
                                     readOnly={saving}
@@ -297,7 +312,7 @@ export const FilesDialog = (props: Props) => {
                                     fontSize="14px"
                                     style={{ height: "60vh", marginBottom: "1rem" }}
                                 />
-                                : <Typography>Loading...</Typography>
+                                : <Typography style={{ height: "60vh" }}>Loading...</Typography>
                             }
                         </div>
                         <Button variant="contained" disabled={saving} style={{ backgroundColor: "#1f9e2c" }} onClick={saveEdits}>Save</Button>
