@@ -135,6 +135,7 @@ export const FilesDialog = (props: Props) => {
                     api.uploadFile();
                 } else {
                     props.openSnackbar(SnackbarStatus.Error, message.data.message, 4000);
+                    setUploading("");
                 }
             } break;
 
@@ -163,7 +164,14 @@ export const FilesDialog = (props: Props) => {
     }
 
     const uploadFile = () => {
-        window.socket?.send(JSON.stringify({ type: MessageType.StartUploadFile, data: path }));
+        api.prepareUploadFile().then((result) => {
+            if (result.success) {
+                window.socket?.send(JSON.stringify({ type: MessageType.StartUploadFile, data: { path: path, size: result.size } }));
+            } else {
+                props.openSnackbar(SnackbarStatus.Error, "Failed to prepare file for upload", 4000);
+                setUploading("");
+            }
+        });
         setUploading(path);
     }
 
@@ -185,6 +193,10 @@ export const FilesDialog = (props: Props) => {
         window.socket?.send(JSON.stringify({ type: MessageType.StopUploadFile, data: false }));
     }
 
+    const zippingFile = (event: any) => {
+        props.openSnackbar(SnackbarStatus.Info, "Zipping local file...", 4000);
+    }
+
     React.useEffect(() => {
         window.socket?.addEventListener('message', handleMessage);
 
@@ -198,12 +210,14 @@ export const FilesDialog = (props: Props) => {
         ipcRenderer.on('fileDataFinished', fileDataFinished);
         ipcRenderer.on('fileDataStarted', fileDataStarted);
         ipcRenderer.on('fileDataCancelled', fileDataCancelled);
+        ipcRenderer.on('zippingFile', zippingFile);
 
         return (() => {
             ipcRenderer.off('fileDataReceive', fileDataReceive);
             ipcRenderer.off('fileDataFinished', fileDataFinished);
             ipcRenderer.off('fileDataStarted', fileDataStarted);
             ipcRenderer.off('fileDataCancelled', fileDataCancelled);
+            ipcRenderer.off('zippingFile', zippingFile);
         });
     }, [])
 
@@ -223,7 +237,7 @@ export const FilesDialog = (props: Props) => {
                                 <Button variant="outlined" disabled={loading} onClick={refresh}>Refresh</Button>
                                 <Button variant="outlined" disabled={loading || path == "/paper/"} onClick={stepBack}>Step back</Button>
                                 <Button variant="outlined" disabled={loading || path == "/paper/"} onClick={goToRoot}>Go to root</Button>
-                                <Button variant="outlined" disabled={loading} onClick={uploadFile}>Upload file</Button>
+                                <Button variant="outlined" disabled={loading || uploading != ""} onClick={uploadFile}>Upload file</Button>
                             </div>
                             <div
                                 id="filelist"

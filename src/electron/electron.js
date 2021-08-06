@@ -95,23 +95,47 @@ app.on('activate', function () {
 // begin app code
 // -----------------------------------------------------
 
-ipcMain.handle('uploadFile', async (event) => {
+let tempZippedFile = undefined;
+ipcMain.handle('prepareUploadFile', async (event) => {
 	const files = await dialog.showOpenDialog(mainWindow, {
 		properties: ["openDirectory"],
 		defaultPath: ""
 	});
 	if (files.filePaths.length > 0) {
-		const srcPath = files.filePaths[0];
-		let srcPathSplit = srcPath.split('\\');
-		const fileName = srcPathSplit.pop();
-		const tmpFile = tmp.fileSync({ keep: false });
-		const tmpFileName = tmpFile.name;
-		await tar.c({
-			options: { preservePaths: false },
-			gzip: true,
-			file: tmpFileName,
-			cwd: srcPathSplit.join("\\")
-		}, [fileName]);
+		try {
+			if (tempZippedFile) {
+				tempZippedFile.removeCallback();
+				tempZippedFile = undefined;
+			}
+
+			event.sender.send('zippingFile');
+
+			const srcPath = files.filePaths[0];
+			let srcPathSplit = srcPath.split('\\');
+			const fileName = srcPathSplit.pop();
+			const tmpFile = tmp.fileSync({ keep: false });
+			tempZippedFile = tmpFile;
+			const tmpFileName = tmpFile.name;
+			await tar.c({
+				options: { preservePaths: false },
+				gzip: true,
+				file: tmpFileName,
+				cwd: srcPathSplit.join("\\")
+			}, [fileName]);
+
+			const fileStats = fs.statSync(tmpFileName);
+			const fileSize = fileStats.size; // bytes
+
+			return { success: true, size: fileSize };
+		} catch {}
+	}
+
+	return { success: false, size: 0 };
+});
+
+ipcMain.handle('uploadFile', async (event) => {
+	if (tempZippedFile) {
+		const tmpFileName = tempZippedFile.name; 
 
 		const readStream = fs.createReadStream(tmpFileName, { encoding: "hex" });
 
@@ -119,11 +143,13 @@ ipcMain.handle('uploadFile', async (event) => {
 			event.sender.send('fileDataReceive', data);
 		});
 		readStream.on('error', (e) => {
-			tmpFile.removeCallback();
+			tempZippedFile.removeCallback();
+			tempZippedFile = undefined;
 			event.sender.send('fileDataFinished', { success: false });
 		});
 		readStream.on('end', () => {
-			tmpFile.removeCallback();
+			tempZippedFile.removeCallback();
+			tempZippedFile = undefined;
 			event.sender.send('fileDataFinished', { success: true });
 		});
 		readStream.on('open', () => {

@@ -35,3 +35,8 @@ export interface ChatMessage {
     support: boolean;
     timestamp: string;
 }
+
+export interface PrepareUploadResult {
+    success: boolean;
+    size: number;
+}
