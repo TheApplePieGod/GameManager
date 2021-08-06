@@ -1,8 +1,11 @@
 // Modules to control application life and create native browser window
-import { app, BrowserWindow, Menu, Tray, ipcMain, session } from 'electron';
+import { app, BrowserWindow, Menu, Tray, ipcMain, session, dialog } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 import * as os from 'os';
+import * as fs from 'fs';
+import * as tar from "tar";
+import * as tmp from "tmp-promise";
 
 const isPackaged = require('electron-is-packaged').isPackaged;
 
@@ -92,6 +95,42 @@ app.on('activate', function () {
 // begin app code
 // -----------------------------------------------------
 
-ipcMain.handle('testFunction', async (event, param) => {
-	return "test data";
+ipcMain.handle('uploadFile', async (event) => {
+	const files = await dialog.showOpenDialog(mainWindow, {
+		properties: ["openDirectory"],
+		defaultPath: ""
+	});
+	if (files.filePaths.length > 0) {
+		const srcPath = files.filePaths[0];
+		let srcPathSplit = srcPath.split('\\');
+		const fileName = srcPathSplit.pop();
+		const tmpFile = tmp.fileSync({ keep: false });
+		const tmpFileName = tmpFile.name;
+		await tar.c({
+			options: { preservePaths: false },
+			gzip: true,
+			file: tmpFileName,
+			cwd: srcPathSplit.join("\\")
+		}, [fileName]);
+
+		const readStream = fs.createReadStream(tmpFileName, { encoding: "hex" });
+
+		readStream.on('data', (data) => {
+			event.sender.send('fileDataReceive', data);
+		});
+		readStream.on('error', (e) => {
+			tmpFile.removeCallback();
+			event.sender.send('fileDataFinished', { success: false });
+		});
+		readStream.on('end', () => {
+			tmpFile.removeCallback();
+			event.sender.send('fileDataFinished', { success: true });
+		});
+		readStream.on('open', () => {
+			event.sender.send('fileDataStarted');
+		})
+
+		return;
+	}
+	event.sender.send('fileDataCancelled');
 });

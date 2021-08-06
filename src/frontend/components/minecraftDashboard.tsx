@@ -11,7 +11,6 @@ interface Props {
     openSnackbar: (status: SnackbarStatus, message: string, closeDelay: number) => void;
 }
 
-
 window.socket = undefined;
 let closing = false;
 let receivedLogs: string[] = []
@@ -85,8 +84,10 @@ export const MinecraftDashboard = (props: Props) => {
             let jsonString = "";
             if (typeof(msg.data) == "string")
                 jsonString = msg.data;
-            else
-                jsonString = msg.data.toString();
+            else {
+                return;
+            }
+
             const message = JSON.parse(jsonString);
 
             switch (message.type) {
@@ -144,6 +145,7 @@ export const MinecraftDashboard = (props: Props) => {
                 } break;
             }
         });
+
         window.socket.onopen = () => {
             if (window.socket)
                 window.socket.send(JSON.stringify({ type: MessageType.Connect, data: apiKey }));

@@ -53,8 +53,10 @@ export const ChatDrawer = (props: Props) => {
         let jsonString = "";
         if (typeof(msg.data) == "string")
             jsonString = msg.data;
-        else
-            jsonString = msg.data.toString();
+        else {
+            return;
+        }
+        
         const message = JSON.parse(jsonString);
 
         switch (message.type) {

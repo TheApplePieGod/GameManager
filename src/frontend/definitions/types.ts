@@ -19,6 +19,10 @@ export enum MessageType {
     ListFiles = "listfiles",
     LoadFile = "loadfile",
     SaveFile = "savefile",
+    DeleteFile = "deletefile",
+    StartUploadFile = "startuploadfile",
+    StopUploadFile = "stopuploadfile",
+    FileDataReceive = "filedatareceive",
 }
 
 export interface Message {
