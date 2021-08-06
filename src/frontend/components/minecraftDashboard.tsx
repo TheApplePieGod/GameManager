@@ -8,6 +8,8 @@ import { FilesDialog } from './filesDialog';
 import { SettingsDialog } from './settingsDialog';
 import { SnackbarStatus } from './snackbar';
 
+const API_VERSION = 1;
+
 interface Props {
     openSnackbar: (status: SnackbarStatus, message: string, closeDelay: number) => void;
 }
@@ -149,7 +151,7 @@ export const MinecraftDashboard = (props: Props) => {
 
         window.socket.onopen = () => {
             if (window.socket)
-                window.socket.send(JSON.stringify({ type: MessageType.Connect, data: apiKey }));
+                window.socket.send(JSON.stringify({ type: MessageType.Connect, data: { key: apiKey, apiVersion: API_VERSION } }));
         };
         window.socket.onclose = (e) => {
             if (!closing)
