@@ -145,7 +145,7 @@ export const SettingsDialog = (props: Props) => {
                                         disabled={loading || saving}
                                         onChange={(e) => setSettings({ ...settings, backupTimeMin: e.target.value as number })}
                                     >
-                                        <MenuItem value={5}>0</MenuItem>
+                                        <MenuItem value={0}>0</MenuItem>
                                         <MenuItem value={15}>15</MenuItem>
                                         <MenuItem value={30}>30</MenuItem>
                                         <MenuItem value={45}>45</MenuItem>

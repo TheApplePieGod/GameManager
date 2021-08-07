@@ -18,6 +18,11 @@ interface Props {
     openSnackbar: (status: SnackbarStatus, message: string, closeDelay: number) => void;
 }
 
+const BLOCKED_FILES = [
+    "paper-docker.conf",
+    ".bash_history",
+]
+
 export const FilesDialog = (props: Props) => {
     const [open, setOpen] = React.useState(false);
     const [fileToDelete, setFileToDelete] = React.useState("");
@@ -260,10 +265,10 @@ export const FilesDialog = (props: Props) => {
                                 {
                                     files.map((f, i) => {
                                         if (f == "") return undefined;
-                                        const split = f.trim().split(' ');
+                                        const split = f.trim().split(/\s/);
                                         const size = split[0];
                                         const name = split[1];
-                                        if (name == "paper-docker.conf") return undefined;
+                                        if (BLOCKED_FILES.includes(name)) return undefined;
                                         if (name == "./" || name == "../") return undefined; // navigational folders
                                         const isDirectory = name.slice(-1) == "/"
                                         const filePath = path + name;
@@ -310,6 +315,7 @@ export const FilesDialog = (props: Props) => {
                                     showPrintMargin={false}
                                     width="100%"
                                     fontSize="14px"
+                                    setOptions={{ useWorker: false }}
                                     style={{ height: "60vh", marginBottom: "1rem" }}
                                 />
                                 : <Typography style={{ height: "60vh" }}>Loading...</Typography>
