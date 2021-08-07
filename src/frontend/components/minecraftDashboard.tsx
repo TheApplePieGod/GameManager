@@ -3,42 +3,67 @@ import React from 'react';
 import * as api from '../definitions/api';
 import { Message, MessageType } from '../definitions/types';
 import * as theme from '../theme';
+import { ChatDrawer } from './chatDrawer';
+import { FilesDialog } from './filesDialog';
+import { SettingsDialog } from './settingsDialog';
 import { SnackbarStatus } from './snackbar';
+
+const API_VERSION = 1;
 
 interface Props {
     openSnackbar: (status: SnackbarStatus, message: string, closeDelay: number) => void;
 }
 
-let socket: WebSocket | undefined = undefined;
+window.socket = undefined;
 let closing = false;
 let receivedLogs: string[] = []
+let disableJump = false;
 export const MinecraftDashboard = (props: Props) => {
     const [apiKey, setApiKey] = React.useState("");
     const [host, setHost] = React.useState("");
     const [storeApiKey, setStoreApiKey] = React.useState(true);
     const [command, setCommand] = React.useState("");
     const [ready, setReady] = React.useState(false);
+    const [support, setSupport] = React.useState(false);
     const [connecting, setConnecting] = React.useState(false);
     const [logs, setLogs] = React.useState("");
+    const [restarting, setRestarting] = React.useState(true);
 
-    const startMonitor = () => {
-        if (ready && socket)
-            socket.send(JSON.stringify({ type: MessageType.StartMonitor }));
+    const startMonitor = (force: boolean) => {
+        if ((ready || force) && window.socket) {
+            window.socket.send(JSON.stringify({ type: MessageType.StartMonitor }));
+            receivedLogs = [];
+            setLogs("");
+        }
     }
 
     const stopMonitor = () => {
-        if (ready && socket) {
-            socket.send(JSON.stringify({ type: MessageType.StopMonitor }));
+        if (ready && window.socket) {
+            window.socket.send(JSON.stringify({ type: MessageType.StopMonitor }));
             receivedLogs = [];
             setLogs("");
         }
     }
 
     const issueCommand = () => {
-        if (ready && socket) {
-            socket.send(JSON.stringify({ type: MessageType.IssueCommand, data: command.trim() }));
+        if (ready && window.socket) {
+            window.socket.send(JSON.stringify({ type: MessageType.IssueCommand, data: command.trim() }));
             setCommand("");
         }
+    }
+
+    const restartServer = () => {
+        if (ready && window.socket) {
+            window.socket.send(JSON.stringify({ type: MessageType.Restart }));
+            setRestarting(true);
+            props.openSnackbar(SnackbarStatus.Info, `Restarting server...`, 6000);
+        }
+    }
+
+    const disconnect = () => {
+        if (window.socket)
+        window.socket.close();
+        cleanup();
     }
 
     const cleanup = () => {
@@ -47,22 +72,25 @@ export const MinecraftDashboard = (props: Props) => {
         setConnecting(false);
         receivedLogs = [];
         closing = false;
+        window.socket = undefined;
     }
 
     const connect = () => {
         setConnecting(true);
         props.openSnackbar(SnackbarStatus.Info, `Connecting...`, 6000);
 
-        if (socket)
-            socket.close();
+        if (window.socket)
+            window.socket.close();
 
-        socket = new WebSocket(`ws://${host}`);
-        socket.onmessage = (msg) => {
+        window.socket = new WebSocket(`ws://${host}`);
+        window.socket.addEventListener("message", (msg) => {
             let jsonString = "";
             if (typeof(msg.data) == "string")
                 jsonString = msg.data;
-            else
-                jsonString = msg.data.toString();
+            else {
+                return;
+            }
+
             const message = JSON.parse(jsonString);
 
             switch (message.type) {
@@ -71,45 +99,66 @@ export const MinecraftDashboard = (props: Props) => {
 
                 case MessageType.Connect: {
                     setConnecting(false);
-                    if (message.data == "") {
+                    if (message.data.success) {
                         setReady(true);
-                        props.openSnackbar(SnackbarStatus.Success, `Connection established`, 4000);
+                        setRestarting(message.data.restarting != 0);
+                        setSupport(message.data.support);
+                        props.openSnackbar(SnackbarStatus.Success, `Connection established! Your connection is being monitored`, 4000);
                     }
                     else {
                         closing = true;
-                        props.openSnackbar(SnackbarStatus.Error, `Failed to establish connection: ${message.data}`, 6000);
+                        props.openSnackbar(SnackbarStatus.Error, `Failed to establish connection: ${message.data.message}`, 4000);
                     }
+                } break;
+
+                case MessageType.Disconnect: {
+                    cleanup();
+                    props.openSnackbar(SnackbarStatus.Error, `Connection closed: ${message.data}`, 4000);
                 } break;
 
                 case MessageType.StartMonitor: { // a response here means we failed to start monitoring
                     setLogs("");
                     receivedLogs = [];
-                    props.openSnackbar(SnackbarStatus.Error, `${message.data}`, 6000);
+                    props.openSnackbar(SnackbarStatus.Error, `${message.data}`, 4000);
                 } break;
 
                 case MessageType.MonitorReceive: {
+                    if (receivedLogs.length == 0)
+                        receivedLogs.push("<Loading last 300 lines of the log>\n");
                     receivedLogs.push(message.data);
                     setLogs(receivedLogs.join(""));
                     const console = document.getElementById("console");
-                    if (console)
+                    if (console && !disableJump)
                         console.scrollTop = console.scrollHeight;
                 } break;
 
                 case MessageType.IssueCommand: { // a response here means the command failed to send
-                    props.openSnackbar(SnackbarStatus.Error, `${message.data}`, 6000);
+                    props.openSnackbar(SnackbarStatus.Error, `${message.data}`, 4000);
+                } break;
+
+                case MessageType.Restart: { // a response here means the restart failed
+                    setRestarting(false);
+                    props.openSnackbar(SnackbarStatus.Error, `${message.data}`, 4000);
+                } break;
+
+                case MessageType.Restarted: {
+                    setRestarting(false);
+                    //startMonitor(true);
+                    props.openSnackbar(SnackbarStatus.Success, `Restart successful!`, 4000);
                 } break;
             }
+        });
+
+        window.socket.onopen = () => {
+            if (window.socket)
+                window.socket.send(JSON.stringify({ type: MessageType.Connect, data: { key: apiKey, apiVersion: API_VERSION } }));
         };
-        socket.onopen = () => {
-            if (socket)
-                socket.send(JSON.stringify({ type: MessageType.Connect, data: apiKey }));
-        };
-        socket.onclose = (e) => {
+        window.socket.onclose = (e) => {
             if (!closing)
                 props.openSnackbar(SnackbarStatus.Warning, "Your connection has been closed", 4000);
             cleanup();
         }
-        socket.onerror = () => {
+        window.socket.onerror = () => {
             props.openSnackbar(SnackbarStatus.Error, "Connection error", 4000);
             cleanup();
         }
@@ -145,10 +194,18 @@ export const MinecraftDashboard = (props: Props) => {
     }
 
     const commandKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-        if (e.key == "Enter") {
+        if (e.key == "Enter" && command.trim() != "") {
             e.preventDefault();
             issueCommand();
         }
+    }
+
+    const consoleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const div = e.target as HTMLDivElement;
+        if (div.scrollTop + div.offsetHeight - div.scrollHeight >= -10)
+            disableJump = false;
+        else
+            disableJump = true;
     }
 
     React.useEffect(() => {
@@ -163,8 +220,8 @@ export const MinecraftDashboard = (props: Props) => {
             setStoreApiKey(savedStoreKey == "true");
         return (() => {
             setReady(false);
-            if (socket) {
-                socket.close();
+            if (window.socket) {
+                window.socket.close();
                 cleanup();
             }
         });
@@ -172,7 +229,7 @@ export const MinecraftDashboard = (props: Props) => {
 
     React.useEffect(() => {
         if (ready)
-            startMonitor();
+            startMonitor(false);
     }, [ready])
 
     return (
@@ -205,12 +262,24 @@ export const MinecraftDashboard = (props: Props) => {
             }
             {ready &&
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                    <div id="console" style={{ width: "95%", fontFamily: "Source Code Pro", overflowY: "scroll", maxHeight: "70vh", margin: "1rem", padding: "1rem", backgroundColor: "#000", color: theme.PALETTE_WHITE }}>
+                    {support &&
+                        <Typography variant="h4" style={{ color: theme.PALETTE_RED }}>SUPPORT CONNECTION</Typography>
+                    }
+                    <ChatDrawer openSnackbar={props.openSnackbar} support={support} />
+                    <FilesDialog openSnackbar={props.openSnackbar} />
+                    <SettingsDialog openSnackbar={props.openSnackbar} />
+                    <div
+                        id="console"
+                        onScroll={consoleScroll}
+                        style={{ width: "95%", fontFamily: "Source Code Pro", overflowY: "scroll", height: "70vh", margin: "1rem", padding: "1rem", backgroundColor: "#000", color: theme.PALETTE_WHITE }}
+                    >
                         {parseLogsText()}
                     </div>
                     <div style={{ display: "flex", gap: "0.25rem", marginTop: "-0.5rem", marginBottom: "1rem" }}>
-                        <Button variant="outlined" onClick={startMonitor}>Reconnect to log</Button>
-                        <Button variant="outlined" disabled={logs == ""} onClick={stopMonitor}>Stop loading log</Button>
+                        <Button variant="outlined" disabled={restarting} onClick={() => startMonitor(false)}>Reconnect to log</Button>
+                        <Button variant="outlined" disabled={logs == "" || restarting} onClick={stopMonitor}>Stop loading log</Button>
+                        <Button variant="outlined" disabled={restarting} onClick={restartServer}>Restart server</Button>
+                        <Button variant="contained" style={{ backgroundColor: theme.PALETTE_RED }} onClick={disconnect}>Disconnect</Button>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
                         <TextField
@@ -220,8 +289,9 @@ export const MinecraftDashboard = (props: Props) => {
                             variant="outlined"
                             value={command}
                             onChange={(e) => setCommand(e.target.value)}
+                            disabled={restarting}
                         />
-                        <Button variant="outlined" disabled={command.trim() == ""} onClick={issueCommand}>Issue Command</Button>
+                        <Button variant="outlined" disabled={command.trim() == "" || restarting} onClick={issueCommand}>Issue Command</Button>
                     </div>
                 </div>
             }

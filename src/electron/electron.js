@@ -1,8 +1,11 @@
 // Modules to control application life and create native browser window
-import { app, BrowserWindow, Menu, Tray, ipcMain, session } from 'electron';
+import { app, BrowserWindow, Menu, Tray, ipcMain, session, dialog } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 import * as os from 'os';
+import * as fs from 'fs';
+import * as tar from "tar";
+import * as tmp from "tmp-promise";
 
 const isPackaged = require('electron-is-packaged').isPackaged;
 
@@ -74,6 +77,7 @@ if (!gotTheLock) {
 
 	app.on('ready', createWindow)
 }
+//app.on('ready', createWindow)
 
 // Quit when all windows are closed.
 app.on('window-all-closed', function () {
@@ -91,6 +95,68 @@ app.on('activate', function () {
 // begin app code
 // -----------------------------------------------------
 
-ipcMain.handle('testFunction', async (event, param) => {
-	return "test data";
+let tempZippedFile = undefined;
+ipcMain.handle('prepareUploadFile', async (event, isFolder) => {
+	const files = await dialog.showOpenDialog(mainWindow, {
+		properties: [isFolder ? "openDirectory" : "openFile"],
+		defaultPath: ""
+	});
+	if (files.filePaths.length > 0) {
+		try {
+			if (tempZippedFile) {
+				tempZippedFile.removeCallback();
+				tempZippedFile = undefined;
+			}
+
+			event.sender.send('zippingFile');
+
+			const srcPath = files.filePaths[0];
+			let srcPathSplit = srcPath.split('\\');
+			const fileName = srcPathSplit.pop();
+			const tmpFile = tmp.fileSync({ keep: false });
+			tempZippedFile = tmpFile;
+			const tmpFileName = tmpFile.name;
+			await tar.c({
+				options: { preservePaths: false },
+				gzip: true,
+				file: tmpFileName,
+				cwd: srcPathSplit.join("\\")
+			}, [fileName]);
+
+			const fileStats = fs.statSync(tmpFileName);
+			const fileSize = fileStats.size; // bytes
+
+			return { success: true, size: fileSize };
+		} catch {}
+	}
+
+	return { success: false, size: 0 };
+});
+
+ipcMain.handle('uploadFile', async (event) => {
+	if (tempZippedFile) {
+		const tmpFileName = tempZippedFile.name; 
+
+		const readStream = fs.createReadStream(tmpFileName, { encoding: "hex" });
+
+		readStream.on('data', (data) => {
+			event.sender.send('fileDataReceive', data);
+		});
+		readStream.on('error', (e) => {
+			tempZippedFile.removeCallback();
+			tempZippedFile = undefined;
+			event.sender.send('fileDataFinished', { success: false });
+		});
+		readStream.on('end', () => {
+			tempZippedFile.removeCallback();
+			tempZippedFile = undefined;
+			event.sender.send('fileDataFinished', { success: true });
+		});
+		readStream.on('open', () => {
+			event.sender.send('fileDataStarted');
+		})
+
+		return;
+	}
+	event.sender.send('fileDataCancelled');
 });
