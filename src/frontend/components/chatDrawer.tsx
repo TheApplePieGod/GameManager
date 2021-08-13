@@ -49,7 +49,7 @@ export const ChatDrawer = (props: Props) => {
         }
     }
 
-    const handleMessage = (msg: MessageEvent) => {
+    const handleMessage = (msg: { data: any }) => {
         let jsonString = "";
         if (typeof(msg.data) == "string")
             jsonString = msg.data;

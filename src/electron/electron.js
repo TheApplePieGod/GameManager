@@ -9,6 +9,7 @@ import * as tmp from "tmp-promise";
 
 const isPackaged = require('electron-is-packaged').isPackaged;
 
+app.commandLine.appendSwitch('ignore-certificate-errors');
 app.commandLine.appendSwitch('remote-debugging-port', '9999');
 app.setAppUserModelId(process.execPath);
 

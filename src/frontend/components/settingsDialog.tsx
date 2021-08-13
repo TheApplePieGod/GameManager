@@ -26,7 +26,7 @@ export const SettingsDialog = (props: Props) => {
         window.socket?.send(JSON.stringify({ type: MessageType.SaveSettings, data: settings }));
     }
 
-    const handleMessage = (msg: MessageEvent) => {
+    const handleMessage = (msg: { data: any }) => {
         let jsonString = "";
         if (typeof(msg.data) == "string")
             jsonString = msg.data;

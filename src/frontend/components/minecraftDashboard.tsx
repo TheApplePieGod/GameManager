@@ -82,7 +82,7 @@ export const MinecraftDashboard = (props: Props) => {
         if (window.socket)
             window.socket.close();
 
-        window.socket = new WebSocket(`ws://${host}`);
+        window.socket = new WebSocket(`wss://${host}`);
         window.socket.addEventListener("message", (msg) => {
             let jsonString = "";
             if (typeof(msg.data) == "string")
@@ -218,7 +218,12 @@ export const MinecraftDashboard = (props: Props) => {
         const savedStoreKey = localStorage.getItem("storeapikey");
         if (savedStoreKey)
             setStoreApiKey(savedStoreKey == "true");
+
+        const pingInterval = setInterval(() => {
+            window.socket?.send(JSON.stringify({ type: MessageType.Ping }));
+        }, 1000 * 60); // every minute
         return (() => {
+            clearInterval(pingInterval);
             setReady(false);
             if (window.socket) {
                 window.socket.close();
