@@ -82,7 +82,7 @@ export const FilesDialog = (props: Props) => {
         updatePath("/paper/");
     }
 
-    const handleMessage = (msg: MessageEvent) => {
+    const handleMessage = (msg: { data: any }) => {
         let jsonString = "";
         if (typeof(msg.data) == "string")
             jsonString = msg.data;

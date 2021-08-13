@@ -25,6 +25,7 @@ export enum MessageType {
     FileDataReceive = "filedatareceive",
     LoadSettings = "loadsettings",
     SaveSettings = "savesettings",
+    Ping = "ping",
 }
 
 export interface Message {
