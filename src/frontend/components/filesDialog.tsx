@@ -21,6 +21,7 @@ interface Props {
 const BLOCKED_FILES = [
     "paper-docker.conf",
     ".bash_history",
+    "server-restart-lock"
 ]
 
 export const FilesDialog = (props: Props) => {

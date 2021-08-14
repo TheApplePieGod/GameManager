@@ -60,6 +60,21 @@ export const MinecraftDashboard = (props: Props) => {
         }
     }
 
+    const stopServer = () => {
+        if (ready && window.socket) {
+            window.socket.send(JSON.stringify({ type: MessageType.Stop }));
+            props.openSnackbar(SnackbarStatus.Info, `Stopping server...`, 6000);
+        }
+    }
+
+    const startServer = () => {
+        if (ready && window.socket) {
+            window.socket.send(JSON.stringify({ type: MessageType.Start }));
+            setRestarting(true);
+            props.openSnackbar(SnackbarStatus.Info, `Starting server...`, 6000);
+        }
+    }
+
     const disconnect = () => {
         if (window.socket)
         window.socket.close();
@@ -141,10 +156,19 @@ export const MinecraftDashboard = (props: Props) => {
                     props.openSnackbar(SnackbarStatus.Error, `${message.data}`, 4000);
                 } break;
 
+                case MessageType.Start: { // a response here means failure
+                    setRestarting(false);
+                    props.openSnackbar(SnackbarStatus.Error, `${message.data}`, 4000);
+                } break;
+
+                case MessageType.Stop: { // a response here means failure
+                    props.openSnackbar(SnackbarStatus.Error, `${message.data}`, 4000);
+                } break;
+
                 case MessageType.Restarted: {
                     setRestarting(false);
                     //startMonitor(true);
-                    props.openSnackbar(SnackbarStatus.Success, `Restart successful!`, 4000);
+                    props.openSnackbar(SnackbarStatus.Success, `Start successful!`, 4000);
                 } break;
             }
         });
@@ -284,6 +308,8 @@ export const MinecraftDashboard = (props: Props) => {
                         <Button variant="outlined" disabled={restarting} onClick={() => startMonitor(false)}>Reconnect to log</Button>
                         <Button variant="outlined" disabled={logs == "" || restarting} onClick={stopMonitor}>Stop loading log</Button>
                         <Button variant="outlined" disabled={restarting} onClick={restartServer}>Restart server</Button>
+                        <Button variant="outlined" disabled={restarting} onClick={stopServer}>Stop server</Button>
+                        <Button variant="outlined" disabled={restarting} onClick={startServer}>Start server</Button>
                         <Button variant="contained" style={{ backgroundColor: theme.PALETTE_RED }} onClick={disconnect}>Disconnect</Button>
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
