@@ -7,11 +7,14 @@ declare global {
 export enum MessageType {
     Connect = "connect",
     Disconnect = "disconnect",
+    Ping = "ping",
     StartMonitor = "startmonitor",
     StopMonitor = "stopmonitor",
     MonitorReceive = "monitorreceive",
     IssueCommand = "issuecommand",
     Restart = "restart",
+    Stop = "stop",
+    Start = "start",
     Restarted = "restarted",
     ChatReceive = "chatreceive",
     LoadChat = "loadchat",
@@ -25,7 +28,6 @@ export enum MessageType {
     FileDataReceive = "filedatareceive",
     LoadSettings = "loadsettings",
     SaveSettings = "savesettings",
-    Ping = "ping",
 }
 
 export interface Message {

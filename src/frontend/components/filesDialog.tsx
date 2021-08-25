@@ -21,6 +21,7 @@ interface Props {
 const BLOCKED_FILES = [
     "paper-docker.conf",
     ".bash_history",
+    "server-restart-lock"
 ]
 
 export const FilesDialog = (props: Props) => {
@@ -103,7 +104,7 @@ export const FilesDialog = (props: Props) => {
                     message.data.data = message.data.data.trim();
                     if (message.data.data != path) { // this will happen if we try to ls a regular file
                         let newFiles = message.data.data.split("\n");
-                        newFiles.shift(); // remove first element as that is the 'total' row returned from ls 
+                        //newFiles.shift(); // remove first element as that is the 'total' row returned from ls 
                         setFiles(newFiles);
                     }
                     else
