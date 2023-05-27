@@ -91,3 +91,5 @@ dist/**
 !dist/favicon.ico
 package-lock.json
 build
+
+*.DS_Store

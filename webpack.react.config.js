@@ -13,8 +13,8 @@ var config = {
       rules: [
       {
         test: /\.ts(x?)$/,
-        include: /src\\frontend/,
-        loader: "awesome-typescript-loader"
+        include: /src\/frontend/,
+        loader: "ts-loader"
       },
       {
         test: /\.css$/,

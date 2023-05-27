@@ -13,7 +13,7 @@ var config = {
     rules: [
     {
       test: /\.ts(x?)$/,
-      include: /src\\electron/,
+      include: /src\/electron/,
       use: [{ loader: 'ts-loader' }]
     },
     {
@@ -27,8 +27,8 @@ var config = {
     filename: 'electron.js'
   },
   plugins: [
-    new IgnorePlugin(/bufferutil/),    
-    new IgnorePlugin(/utf-8-validate/),
+    new IgnorePlugin({ resourceRegExp: /bufferutil/ }),    
+    new IgnorePlugin({ resourceRegExp: /utf-8-validate/ }),
   ],
   experiments: {
     topLevelAwait: true
