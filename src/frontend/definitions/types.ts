@@ -28,11 +28,14 @@ export enum MessageType {
     FileDataReceive = "filedatareceive",
     LoadSettings = "loadsettings",
     SaveSettings = "savesettings",
+    ListRegistrations = "listregistrations",
+    SaveRegistration = "saveregistration",
+    DeleteRegistration = "deleteregistration"
 }
 
 export interface Message {
-    type: MessageType,
-    data: any
+    type: MessageType;
+    data: any;
 }
 
 export interface ChatMessage {
@@ -61,4 +64,21 @@ export const ServerSettingsDefault: ServerSettings = {
     backupLogging: true,
     minecraftVersion: "latest",
     paperBuild: "latest"
+};
+
+export interface Registration {
+    id: number;
+    apiKey: string;
+    supportKey: string;
+    workloadName: string;
+    javaOpts: string;
+    active: boolean;
 }
+export const RegistrationDefault: Registration = {
+    id: 0,
+    apiKey: "",
+    supportKey: "",
+    workloadName: "",
+    javaOpts: "-Xms12G -Xmx12G",
+    active: true
+};
