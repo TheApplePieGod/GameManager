@@ -112,7 +112,6 @@ export const FilesDialog = (props: Props) => {
             case MessageType.ListFiles:
                 {
                     setLoading(false);
-                    console.log(message.data);
                     if (message.data.success) {
                         message.data.data = message.data.data.trim();
                         if (message.data.data != path) {
@@ -224,15 +223,31 @@ export const FilesDialog = (props: Props) => {
                     })
                 );
             } else {
-                props.openSnackbar(SnackbarStatus.Error, "Failed to prepare file for upload", 4000);
+                if (!result.cancelled)
+                    props.openSnackbar(
+                        SnackbarStatus.Error,
+                        "Failed to prepare file for upload",
+                        4000
+                    );
                 setUploading("");
             }
         });
         setUploading(path);
     };
 
+    const updateUploadProgress = (progress: number) => {
+        props.openSnackbar(
+            SnackbarStatus.Info,
+            `Uploading: ${Math.round(
+                progress * 100
+            )}% Interrupting the connection will result in an incomplete upload`,
+            4000
+        );
+    };
+
     const fileDataReceive = (event: any, data: any) => {
-        window.socket?.send(JSON.stringify({ type: MessageType.FileDataReceive, data: data }));
+        window.socket?.send(JSON.stringify({ type: MessageType.FileDataReceive, data: data.data }));
+        updateUploadProgress(data.progress);
     };
 
     const fileDataFinished = (event: any, data: any) => {
@@ -244,11 +259,7 @@ export const FilesDialog = (props: Props) => {
     };
 
     const fileDataStarted = (event: any) => {
-        props.openSnackbar(
-            SnackbarStatus.Info,
-            "Upload started, please be patient. Interrupting the connection will result in an incomplete upload",
-            4000
-        );
+        updateUploadProgress(0);
     };
 
     const fileDataCancelled = (event: any) => {
@@ -348,7 +359,7 @@ export const FilesDialog = (props: Props) => {
                                 </Typography>
                                 {files.map((f, i) => {
                                     if (f == "") return undefined;
-                                    const split = f.trim().split(/\s/);
+                                    const split = f.trim().split("\t");
                                     const size = split[0];
                                     const name = split[1];
                                     if (BLOCKED_FILES.includes(name)) return undefined;
@@ -366,8 +377,8 @@ export const FilesDialog = (props: Props) => {
                                         canDelete &&
                                         !isDirectory &&
                                         !size.includes("G") &&
-                                        (size.includes("M") &&
-                                            parseInt(size.substring(0, size.length - 1))) < 10; // 10 MB max
+                                        (!size.includes("M") ||
+                                            parseInt(size.substring(0, size.length - 1)) < 10); // 10 MB max
                                     return (
                                         // we can assume a '.' indicates a file
                                         <div

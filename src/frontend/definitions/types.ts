@@ -46,6 +46,7 @@ export interface ChatMessage {
 
 export interface PrepareUploadResult {
     success: boolean;
+    cancelled: boolean;
     size: number;
 }
 

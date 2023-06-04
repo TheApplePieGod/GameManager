@@ -140,21 +140,25 @@ ipcMain.handle("prepareUploadFile", async (event, isFolder) => {
       const fileStats = fs.statSync(tmpFileName);
       const fileSize = fileStats.size; // bytes
 
-      return { success: true, size: fileSize };
+      return { success: true, cancelled: false, size: fileSize };
     } catch {}
   }
+  else
+    return { success: false, cancelled: true, size: 0 };
 
-  return { success: false, size: 0 };
+  return { success: false, cancelled: false, size: 0 };
 });
 
 ipcMain.handle("uploadFile", async (event) => {
   if (tempZippedFile) {
     const tmpFileName = tempZippedFile.name;
-
+    const tmpFileSize = fs.statSync(tmpFileName).size;
     const readStream = fs.createReadStream(tmpFileName, { encoding: "hex" });
 
+    let progress = 0;
     readStream.on("data", (data) => {
-      event.sender.send("fileDataReceive", data);
+      progress += data.length
+      event.sender.send("fileDataReceive", { data, progress: progress / tmpFileSize * 0.5 });
     });
     readStream.on("error", (e) => {
       tempZippedFile.removeCallback();

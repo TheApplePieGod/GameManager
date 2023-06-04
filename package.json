@@ -1,6 +1,6 @@
 {
   "name": "GameManager",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "",
   "main": "./dist/electron.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "dev:react": "set NODE_ENV=development && webpack serve --config webpack.react.config.js --mode development",
     "prod:react": "set NODE_ENV=production && webpack --config webpack.react.config.js --mode production",
     "publish": "npm run prod:electron && npm run prod:react && electron-builder",
-    "publish-packed": "npm run prod:electron && npm run prod:react && electron-builder --dir"
+    "publish-unpacked": "npm run prod:electron && npm run prod:react && electron-builder --dir"
   },
   "build": {
     "asar": true,
@@ -27,14 +27,17 @@
     "@types/react": "17.0.0",
     "@types/react-dom": "17.0.0",
     "@types/react-router": "^5.1.12",
-    "ts-loader": "^8.2.1",
+    "@types/tar": "^4.0.5",
+    "@types/tmp": "^0.2.1",
+    "@types/webpack": "^5.28.1",
     "css-loader": "^5.1.1",
     "electron": "^12.0.0",
     "electron-builder": "^23.6.0",
     "html-webpack-plugin": "^5.2.0",
     "node-loader": "^1.0.2",
     "style-loader": "^2.0.0",
-    "typescript": "^4.2.2",
+    "ts-loader": "^8.2.1",
+    "typescript": "^5.1.3",
     "webpack": "^5.24.3",
     "webpack-cli": "^4.5.0",
     "webpack-dev-server": "^3.11.2"
@@ -43,8 +46,6 @@
     "@material-ui/core": "4.11.3",
     "@material-ui/icons": "4.11.2",
     "@material-ui/lab": "4.0.0-alpha.57",
-    "@types/tar": "^4.0.5",
-    "@types/tmp": "^0.2.1",
     "electron-is-packaged": "^1.0.2",
     "memoize-one": "^5.1.1",
     "react": "17.0.0",
