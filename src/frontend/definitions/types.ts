@@ -57,6 +57,7 @@ export interface ServerSettings {
     backupLogging: boolean;
     minecraftVersion: string;
     paperBuild: string;
+    javaVersion: number;
 }
 export const ServerSettingsDefault: ServerSettings = {
     worldName: "world",
@@ -64,7 +65,8 @@ export const ServerSettingsDefault: ServerSettings = {
     backupTimeMin: 30,
     backupLogging: true,
     minecraftVersion: "latest",
-    paperBuild: "latest"
+    paperBuild: "latest",
+    javaVersion: 21
 };
 
 export interface Registration {

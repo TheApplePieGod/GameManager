@@ -51,6 +51,7 @@ export const SettingsDialog = (props: Props) => {
                         backupLogging: loadedSettings.backup_logging == "true",
                         minecraftVersion: loadedSettings.minecraft_version,
                         paperBuild: loadedSettings.paper_build,
+                        javaVersion: loadedSettings.java_version ?? ServerSettingsDefault.javaVersion
                     };
 
                     if (newSettings.maxBackups % 5 != 0)
@@ -179,6 +180,24 @@ export const SettingsDialog = (props: Props) => {
                                     onChange={(e) => setSettings({ ...settings, paperBuild: e.target.value })}
                                 />
                                 <Tooltip title={<Typography>When installing the Paper server, use a specific build of Paper (i.e. 54). This can also be set to latest to use the most recent version</Typography>}>
+                                    <InfoIcon />
+                                </Tooltip>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", marginBottom: "0.75rem", gap: "0.5rem" }}>
+                                <FormControl fullWidth variant="outlined">
+                                    <InputLabel id="javaversion-label">Java Version</InputLabel>
+                                    <Select
+                                        labelId="javaversion-label"
+                                        label="Java Version"
+                                        value={settings.javaVersion}
+                                        disabled={loading || saving}
+                                        onChange={(e) => setSettings({ ...settings, javaVersion: e.target.value as number })}
+                                    >
+                                        <MenuItem value={17}>17</MenuItem>
+                                        <MenuItem value={21}>21</MenuItem>
+                                    </Select>
+                                </FormControl>
+                                <Tooltip title={<Typography>The Java version to use to run Minecraft. Older Minecraft versions usually require an older Java version.</Typography>}>
                                     <InfoIcon />
                                 </Tooltip>
                             </div>

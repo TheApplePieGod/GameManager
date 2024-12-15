@@ -18,7 +18,7 @@ import { FilesDialog } from "./filesDialog";
 import { SettingsDialog } from "./settingsDialog";
 import { SnackbarStatus } from "./snackbar";
 
-const API_VERSION = 2;
+const API_VERSION = 3;
 
 interface Props {
     openSnackbar: (status: SnackbarStatus, message: string, closeDelay: number) => void;
